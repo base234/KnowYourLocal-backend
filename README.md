@@ -6,7 +6,7 @@ This project is just a starter setup for Register, Login and Forgot Password. It
 
 Database used in MySQL.
 
-The frontend repo of the project: [https://github.com/Stack-Bundle/Frontend-scaffolding-adonisjs](https://github.com/Stack-Bundle/Frontend-scaffolding-adonisjs)
+The frontend repo of the project: [https://github.com/base234/KnowYourLocal-backend](https://github.com/base234/KnowYourLocal-backend)
 
 # Getting Started
 ## Requirements
@@ -17,12 +17,12 @@ The frontend repo of the project: [https://github.com/Stack-Bundle/Frontend-scaf
 ## Project setup
 ### 1. Download the project to your local machine (SSH)
 ```
-git clone git@github.com:Stack-Bundle/AdonisJS-API-Scaffolding.git
+git clone git@github.com:base234/KnowYourLocal-backend.git
 ```
 
 ### 2. Navigate to the project directory
 ```
-cd AdonisJS-API-Scaffolding
+cd KnowYourLocal-backend
 ```
 
 ### 3. Setup .env
