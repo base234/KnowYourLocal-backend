@@ -1,4 +1,4 @@
-# AdonisJS API Scafffolding
+# KnowYourLocal Backend
 
 An API Infrastructure in AdonisJS.
 
@@ -6,7 +6,7 @@ This project is just a starter setup for Register, Login and Forgot Password. It
 
 Database used in MySQL.
 
-The frontend repo of the project: [https://github.com/base234/KnowYourLocal-backend](https://github.com/base234/KnowYourLocal-backend)
+The backend repo of the project: [https://github.com/base234/KnowYourLocal-backend](https://github.com/base234/KnowYourLocal-backend)
 
 # Getting Started
 ## Requirements
