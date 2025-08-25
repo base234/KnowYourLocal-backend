@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat with Function Calling - Vanilla JS</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .chat-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+
+        .chat-header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .messages-container {
+            height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+
+        .assistant-message {
+            background: white;
+            border: 1px solid #e1e5e9;
+            color: #333;
+        }
+
+        .tool-call {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+
+        .tool-result {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .streaming {
+            opacity: 0.8;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .message-content {
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .tool-call-info, .tool-result-info {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .typing-indicator {
+            animation: blink 1s infinite;
+            color: #007bff;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            resize: none;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .send-button {
+            padding: 15px 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: #0056b3;
+        }
+
+        .send-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            background: #e9ecef;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .example-queries {
+            background: #e3f2fd;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .example-queries h3 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+
+        .example-queries ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .example-queries li {
+            margin-bottom: 5px;
+            cursor: pointer;
+            color: #1976d2;
+        }
+
+        .example-queries li:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🤖 AI Chat with Function Calling</h1>
+            <p>Experience real-time streaming with OpenAI function calls</p>
+        </div>
+
+        <div class="example-queries">
+            <h3>💡 Try these examples:</h3>
+            <ul>
+                <li onclick="setExample('What\'s the weather in New York?')">What's the weather in New York?</li>
+                <li onclick="setExample('Calculate 15 * 23')">Calculate 15 * 23</li>
+                <li onclick="setExample('Tell me about Pikachu')">Tell me about Pikachu</li>
+                <li onclick="setExample('Say hello world')">Say hello world</li>
+            </ul>
+        </div>
+
+        <div class="status" id="status">Ready to chat</div>
+
+        <div class="messages-container" id="messagesContainer">
+            <!-- Messages will be added here -->
+        </div>
+
+        <div class="input-container">
+            <textarea
+                id="messageInput"
+                placeholder="Type your message here... (Press Enter to send)"
+                rows="3"
+            ></textarea>
+            <button id="sendButton" class="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        class ChatApp {
+            constructor() {
+                this.messages = [];
+                this.isStreaming = false;
+                this.currentStreamingMessage = '';
+                this.eventSource = null;
+
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.messagesContainer = document.getElementById('messagesContainer');
+                this.statusElement = document.getElementById('status');
+            }
+
+            bindEvents() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+            }
+
+            setStatus(message) {
+                this.statusElement.textContent = message;
+            }
+
+            addMessage(message) {
+                this.messages.push(message);
+                this.renderMessage(message);
+            }
+
+            renderMessage(message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${message.role === 'user' ? 'user-message' : 'assistant-message'} ${
+                    message.isToolCall ? 'tool-call' : ''
+                } ${message.isToolResult ? 'tool-result' : ''} ${message.isError ? 'error' : ''}`;
+
+                const timestamp = message.timestamp.toLocaleTimeString();
+
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <span class="role">${message.role === 'user' ? 'You' : 'Assistant'}</span>
+                        <span class="timestamp">${timestamp}</span>
+                    </div>
+                    <div class="message-content">
+                        ${message.isToolCall ? `
+                            <div class="tool-call-info">
+                                <strong>🔧 Function:</strong> ${message.toolName}<br>
+                                <strong>Arguments:</strong> <pre>${JSON.stringify(message.arguments, null, 2)}</pre>
+                            </div>
+                        ` : ''}
+                        ${message.isToolResult ? `
+                            <div class="tool-result-info">
+                                <strong>✅ Result:</strong> <pre>${JSON.stringify(message.result, null, 2)}</pre>
+                            </div>
+                        ` : ''}
+                        ${message.content}
+                    </div>
+                `;
+
+                this.messagesContainer.appendChild(messageDiv);
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message || this.isStreaming) return;
+
+                // Add user message
+                const userMessage = {
+                    role: 'user',
+                    content: message,
+                    timestamp: new Date()
+                };
+                this.addMessage(userMessage);
+
+                // Clear input and start streaming
+                this.messageInput.value = '';
+                this.isStreaming = true;
+                this.currentStreamingMessage = '';
+                this.setStatus('Streaming...');
+                this.sendButton.disabled = true;
+
+                try {
+                    // Create EventSource for Server-Sent Events
+                    this.eventSource = new EventSource(`/api/chat/stream?message=${encodeURIComponent(message)}`);
+
+                    this.eventSource.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleStreamEvent(data);
+                        } catch (error) {
+                            console.error('Error parsing SSE data:', error);
+                        }
+                    };
+
+                    this.eventSource.onerror = (error) => {
+                        console.error('EventSource error:', error);
+                        this.endStream();
+                    };
+
+                } catch (error) {
+                    console.error('Error starting stream:', error);
+                    this.endStream();
+                }
+            }
+
+            handleStreamEvent(data) {
+                switch (data.type) {
+                    case 'connected':
+                        console.log('Stream connected:', data.message);
+                        break;
+
+                    case 'content':
+                        // Stream content chunks
+                        this.currentStreamingMessage += data.content;
+                        this.updateStreamingMessage();
+                        break;
+
+                    case 'tool_call_start':
+                        // Show tool call notification
+                        this.addMessage({
+                            role: 'assistant',
+                            content: `🔧 Calling function: ${data.tool_name}`,
+                            timestamp: new Date(),
+                            isToolCall: true,
+                            toolName: data.tool_name,
+                            arguments: data.arguments
+                        });
+                        break;
+
+                    case 'tool_call_result':
+                        // Show tool call result
+                        this.addMessage({
+                            role: 'assistant',
+                            content: `✅ Function ${data.tool_name} completed`,
+                            timestamp: new Date(),
+                            isToolResult: true,
+                            toolName: data.tool_name,
+                            result: data.result
+                        });
+                        break;
+
+                    case 'final_response':
+                        // Final response after tool calls
+                        this.addMessage({
+                            role: 'assistant',
+                            content: data.content,
+                            timestamp: new Date()
+                        });
+                        break;
+
+                    case 'error':
+                        this.addMessage({
+                            role: 'assistant',
+                            content: `❌ Error: ${data.message}`,
+                            timestamp: new Date(),
+                            isError: true
+                        });
+                        break;
+
+                    case 'done':
+                        // Stream completed
+                        if (this.currentStreamingMessage) {
+                            this.addMessage({
+                                role: 'assistant',
+                                content: this.currentStreamingMessage,
+                                timestamp: new Date()
+                            });
+                        }
+                        this.endStream();
+                        break;
+                }
+            }
+
+            updateStreamingMessage() {
+                // Remove existing streaming message if any
+                const existingStreaming = this.messagesContainer.querySelector('.streaming');
+                if (existingStreaming) {
+                    existingStreaming.remove();
+                }
+
+                // Add new streaming message
+                if (this.currentStreamingMessage) {
+                    const streamingDiv = document.createElement('div');
+                    streamingDiv.className = 'message assistant-message streaming';
+                    streamingDiv.innerHTML = `
+                        <div class="message-header">
+                            <span class="role">Assistant</span>
+                            <span class="timestamp">Now</span>
+                        </div>
+                        <div class="message-content">
+                            ${this.currentStreamingMessage}
+                            <span class="typing-indicator">▋</span>
+                        </div>
+                    `;
+                    this.messagesContainer.appendChild(streamingDiv);
+                    this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+                }
+            }
+
+            endStream() {
+                this.isStreaming = false;
+                this.currentStreamingMessage = '';
+                this.setStatus('Ready to chat');
+                this.sendButton.disabled = false;
+
+                if (this.eventSource) {
+                    this.eventSource.close();
+                    this.eventSource = null;
+                }
+            }
+        }
+
+        // Initialize the chat app
+        const chatApp = new ChatApp();
+
+        // Function to set example queries
+        function setExample(text) {
+            document.getElementById('messageInput').value = text;
+            document.getElementById('messageInput').focus();
+        }
+
+        // Add some initial instructions
+        setTimeout(() => {
+            chatApp.addMessage({
+                role: 'assistant',
+                content: 'Hello! I\'m an AI assistant with access to several functions. I can:\n\n• Get weather information\n• Perform mathematical calculations\n• Provide Pokemon information\n• Print hello world messages\n\nTry asking me something!',
+                timestamp: new Date()
+            });
+        }, 500);
+    </script>
+</body>
+</html>

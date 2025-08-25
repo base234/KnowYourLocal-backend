@@ -1,0 +1,73 @@
+services:
+  globehopper:
+    build: .
+    command: node ace serve --hmr
+    volumes:
+      - .:/globehopper
+      - globehopper_node_modules:/globehopper/node_modules
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - '3333:3333'
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    networks:
+      - globehopper
+
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USER}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - globehopper
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      retries: 5
+
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - globehopper
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      retries: 3
+      timeout: 5s
+
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    volumes:
+      - mailpit_data:/data
+    ports:
+      - '8025:8025'
+    networks:
+      - globehopper
+
+networks:
+  globehopper:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  globehopper_node_modules:
+  redis_data:
+  mailpit_data:
