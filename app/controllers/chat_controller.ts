@@ -1,11 +1,11 @@
 // app/Controllers/Http/ChatController.ts
-import { HttpContextContract, Response } from '@adonisjs/core/http'
-import OpenAI from 'openai'
-import axios from 'axios'
+import { HttpContext, Response } from '@adonisjs/core/http'
+import OpenAI from 'openai';
+import axios from 'axios';
 
 export default class ChatController {
 
-  public async createChat({ request, response }: HttpContextContract) {
+  public async createChat({ request, response }: HttpContext) {
     const { data } = request.body()
 
     this.streamChat(data.text, response);
@@ -293,16 +293,14 @@ export default class ChatController {
     response.response.end()
   }
 
-  async streamText({ request, response }: HttpContextContract) {
+  async streamText({ request, response }: HttpContext) {
     const { data } = request.body();
 
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     })
 
-    // response.header('Content-Type', 'text/event-stream')
-    // response.header('Cache-Control', 'no-cache')
-
+    // Step 1: Define available tools
     const tools = [
       {
         type: "function",
@@ -340,127 +338,126 @@ export default class ChatController {
       }
     ];
 
-    let input: any = [
+    // Step 2: Start conversation with user message
+    const conversation: any[] = [
       {
         role: "user",
         content: data.text,
-      },
+      }
     ];
 
+    console.log("🚀 Starting chat with:", data.text);
+
+    // Step 3: First AI call - AI decides if it needs tools
+    console.log("🤖 Calling AI to see if tools are needed...");
     let aiResponse = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       tools,
-      messages: input
-    })
-
-    let functionCall: any = null;
-    let functionCallArguments: any = null;
-    let toolCallExecuted = false;
-    let toolCallResult = null;
-    let allToolCalls: any[] = [];
-
-    // Check if there are function calls in the response
-    if (aiResponse.choices[0].message.tool_calls && aiResponse.choices[0].message.tool_calls.length > 0) {
-      allToolCalls = aiResponse.choices[0].message.tool_calls;
-      toolCallExecuted = true;
-
-      console.log(`🔧 ${allToolCalls.length} TOOL CALL(S) DETECTED:`);
-      allToolCalls.forEach((call, index) => {
-        console.log(`Tool ${index + 1}: ${call.function.name}`);
-        console.log(`Arguments:`, JSON.parse(call.function.arguments));
-      });
-    } else {
-      console.log("📝 NO TOOL CALL - Direct response from AI");
-    }
-
-    // Add the AI response to input
-    input.push({
-      role: 'assistant',
-      content: aiResponse.choices[0].message.content,
-      tool_calls: aiResponse.choices[0].message.tool_calls
+      messages: conversation
     });
 
-    // Execute all tool calls if any exist
-    if (allToolCalls.length > 0) {
-      console.log("⚡ EXECUTING TOOL CALLS...");
+    const aiMessage = aiResponse.choices[0].message;
 
-      // Execute each tool call and collect results
-      for (let i = 0; i < allToolCalls.length; i++) {
-        const toolCall = allToolCalls[i];
-        const toolCallArgs = JSON.parse(toolCall.function.arguments);
+    // Step 4: Check if AI wants to use any tools
+    if (aiMessage.tool_calls && aiMessage.tool_calls.length > 0) {
+      console.log(`🔧 AI wants to use ${aiMessage.tool_calls.length} tool(s)`);
 
-        console.log(`🔄 Executing tool ${i + 1}: ${toolCall.function.name}`);
+      // Add AI's response to conversation
+      conversation.push({
+        role: 'assistant',
+        content: aiMessage.content,
+        tool_calls: aiMessage.tool_calls
+      });
 
-        let result;
+      // Step 5: Execute each tool the AI requested
+      for (const toolCall of aiMessage.tool_calls) {
+        const toolName = toolCall.function.name;
+        const toolArgs = JSON.parse(toolCall.function.arguments);
+
+        console.log(`⚡ Executing tool: ${toolName} with args:`, toolArgs);
+
+        let toolResult;
         try {
-          switch (toolCall.function.name) {
+          // Execute the specific tool
+          switch (toolName) {
             case 'get_pokemon_info':
-              result = await this.getPokemonInfo(toolCallArgs.pokemon_name);
+              toolResult = await this.getPokemonInfo(toolArgs.pokemon_name);
               break;
             case 'greet_hello_world':
-              result = await this.greetHelloWorld(toolCallArgs.greeting);
+              toolResult = await this.greetHelloWorld();
               break;
             default:
-              result = { error: `Unknown function: ${toolCall.function.name}` };
+              toolResult = { error: `Unknown tool: ${toolName}` };
           }
 
-          console.log(`✅ Tool ${i + 1} result:`, result);
+          console.log(`✅ Tool ${toolName} result:`, toolResult);
 
           // Add tool result to conversation
-          input.push({
+          conversation.push({
             role: 'tool',
             tool_call_id: toolCall.id,
-            content: JSON.stringify(result)
+            tool_name: toolName,
+            content: JSON.stringify(toolResult),
+            is_error: false,
           });
 
         } catch (error) {
-          console.error(`❌ Error executing tool ${i + 1}:`, error);
-          input.push({
+          console.error(`❌ Error executing tool ${toolName}:`, error);
+          conversation.push({
             role: 'tool',
             tool_call_id: toolCall.id,
-            content: JSON.stringify({ error: error.message })
+            tool_name: toolName,
+            content: JSON.stringify({ error: error.message }),
+            is_error: true,
+            error_message: error.message
           });
         }
       }
 
-      console.log("🔄 SENDING FINAL REQUEST WITH ALL TOOL RESULTS...");
-      console.log("Final input:", JSON.stringify(input, null, 2));
-
-      input.push({
+      // Step 6: Ask AI to give final response using tool results
+      console.log("🔄 Asking AI for final response with tool results...");
+      conversation.push({
         role: 'user',
-        content: 'Avoid markdown formatting in your response for texts. Instead use HTML tags to format your response. Do not say what you are doing, just do it. Do not mention the tool call in the response.'
+        content: 'Avoid mentioning the tool results directly in your conversations. If tool call is done or happened, then you can as if like very short explanation just as an initial introductive message. Beside, it is not always necessary to give response using the tool results. You decide when to response or not. Also, add a conclusion message at the end of your response. Use HTML tags for formatting, not markdown.'
       });
 
       aiResponse = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
-        messages: input,
-        tools
-      })
+        messages: conversation
+      });
 
-      console.log("🎯 FINAL AI RESPONSE AFTER TOOL CALLS:", JSON.stringify(aiResponse.choices[0].message, null, 2));
+      console.log("🎯 Final AI response received");
+    } else {
+      console.log("📝 No tools needed - direct AI response");
     }
 
-    // Prepare response with clear tool call information
-    const responseData = {
+    // Step 7: Send final response
+    const finalResponse = {
       status: 'success',
       message: 'Chat processed successfully',
       data: {
         ai_response: aiResponse.choices[0].message,
-        tool_call_info: {
-          tool_call_executed: toolCallExecuted,
-          total_tools_called: allToolCalls.length,
-          tools_executed: allToolCalls.map(call => ({
-            function_name: call.function.name,
-            function_arguments: JSON.parse(call.function.arguments)
-          })),
-          final_response_after_tool_call: toolCallExecuted
-        }
+        conversation_length: conversation.length,
+        tools_used: aiMessage.tool_calls ? aiMessage.tool_calls.length : 0,
+        conversations: conversation.filter(msg => msg.role === 'assistant' || msg.role === 'tool'),
+        tool_calls: aiMessage.tool_calls ? aiMessage.tool_calls.map((call: any) => {
+          // Find the corresponding tool result in conversation
+          const toolResult = conversation.find(msg =>
+            msg.role === 'tool' && msg.tool_call_id === call.id
+          );
+
+          return {
+            id: call.id,
+            name: call.function.name,
+            arguments: JSON.parse(call.function.arguments),
+            result: toolResult ? JSON.parse(toolResult.content) : null
+          };
+        }) : []
       }
     };
 
-    console.log("📤 FINAL RESPONSE:", JSON.stringify(responseData, null, 2));
-
-    return response.status(200).send(responseData);
+    console.log("📤 Sending response to user");
+    return response.status(200).send(finalResponse);
   }
 
   public async getPokemonInfo(pokemonName: string) {
@@ -479,19 +476,21 @@ export default class ChatController {
           name: stat.stat.name,
           value: stat.base_stat
         })),
-        sprite: pokemon.sprites.front_default
+        sprite: pokemon.sprites.front_default,
+        is_error: false
       }
     } catch (error) {
       console.error('Error fetching Pokemon info:', error)
       return {
         name: pokemonName,
-        error: 'Failed to fetch Pokemon information'
+        is_error: true,
+        error_message: 'Failed to fetch Pokemon information',
       }
     }
   }
 
-  public async greetHelloWorld(greeting: string) {
-    return greeting + " Hello World to you too!";
+  public async greetHelloWorld() {
+    return "Hello World to you too!";
   }
 
   private async executeFunction(functionName: string, args: any) {
