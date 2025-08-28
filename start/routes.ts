@@ -12,6 +12,8 @@ import router from '@adonisjs/core/services/router'
 import AuthController from '#controllers/auth_controller';
 import OnboardingController from '#controllers/onboarding_controller';
 import CustomerController from '#controllers/customer_controller';
+import LocalTypesController from '#controllers/local_types_controller';
+import LocalsController from '#controllers/locals_controller';
 import transmit from '@adonisjs/transmit/services/main'
 import ChatController from '#controllers/chat_controller';
 transmit.registerRoutes()
@@ -44,5 +46,18 @@ router.get('/ping-transmit', () => {
 })
 
 router.post('/chats', [ChatController, 'createChat']).as('chat.createChat');
-router.get('/chats/stream', [ChatController, 'streamChat']).as('chat.streamChat');
 router.post('/chats/stream-text', [ChatController, 'streamText']).as('chat.streamText');
+
+// Local Types CRUD Routes
+router.get('/local-types', [LocalTypesController, 'index']).as('local-types.index');
+router.get('/local-types/:id', [LocalTypesController, 'show']).as('local-types.show');
+router.post('/local-types', [LocalTypesController, 'store']).as('local-types.store');
+router.put('/local-types/:id', [LocalTypesController, 'update']).as('local-types.update');
+router.delete('/local-types/:id', [LocalTypesController, 'destroy']).as('local-types.destroy');
+
+// Locals CRUD Routes
+router.get('/locals', [LocalsController, 'index']).as('locals.index');
+router.get('/locals/:id', [LocalsController, 'show']).as('locals.show');
+router.post('/locals', [LocalsController, 'store']).as('locals.store');
+router.put('/locals/:id', [LocalsController, 'update']).as('locals.update');
+router.delete('/locals/:id', [LocalsController, 'destroy']).as('locals.destroy');
