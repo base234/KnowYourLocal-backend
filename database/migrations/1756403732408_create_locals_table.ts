@@ -11,9 +11,12 @@ export default class extends BaseSchema {
       table.integer('local_type_id').unsigned();
       table.foreign('local_type_id').references('id').inTable('local_types').onDelete('CASCADE');
 
+      table.integer('user_id').unsigned();
+      table.foreign('user_id').references('id').inTable('users').onDelete('CASCADE');
+
 
       table.string('name').notNullable();
-      table.text('detail').nullable();
+      table.text('description').nullable();
 
       table.timestamp('created_at')
       table.timestamp('updated_at')

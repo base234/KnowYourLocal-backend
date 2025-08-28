@@ -17,6 +17,9 @@ export default class LocalTypes extends BaseModel {
 
   @column()
   declare description: string | null
+  
+  @column()
+  declare short_description: string | null
 
   @column()
   declare icon: string | null

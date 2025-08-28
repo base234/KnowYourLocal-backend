@@ -7,6 +7,7 @@ export default class LocalTypesTransformer {
       uuid: localType.uuid,
       name: localType.name,
       description: localType.description,
+      short_description: localType.short_description,
       icon: localType.icon,
       created_at: localType.createdAt?.toISO(),
       updated_at: localType.updatedAt?.toISO(),

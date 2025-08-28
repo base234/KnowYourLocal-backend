@@ -6,7 +6,7 @@ export default class LocalsTransformer {
       id: local.id,
       uuid: local.uuid,
       name: local.name,
-      detail: local.detail,
+      description: local.description,
       local_type_id: local.local_type_id,
       local_type: local.local_type ? {
         id: local.local_type.id,

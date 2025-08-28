@@ -2,6 +2,7 @@ import { HttpContext } from '@adonisjs/core/http'
 import Locals from '#models/locals'
 import LocalTypes from '#models/local_types'
 import LocalsTransformer from '#transformers/locals_transformer'
+import User from '#models/user'
 
 export default class LocalsController {
   /**
@@ -70,7 +71,7 @@ export default class LocalsController {
    */
   async store({ request, response }: HttpContext) {
     try {
-      const data = request.only(['name', 'detail', 'local_type_id'])
+      const data = request.only(['name', 'description', 'local_type_id','user_id'])
       
       // Validate required fields
       if (!data.name) {
@@ -78,6 +79,18 @@ export default class LocalsController {
           message: 'Name is required'
         })
       }
+      if (!data.user_id) {
+        return response.badRequest({
+          message: 'User ID is required'
+        })
+      }
+      const user = await User.query().where('uuid', data.user_id).first()
+      if (!user) {
+        return response.badRequest({
+          message: 'User not found'
+        })
+      }
+      data.user_id = user.id
 
       // Validate local_type_id exists if provided
       if (data.local_type_id) {

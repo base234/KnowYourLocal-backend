@@ -9,6 +9,7 @@ export default class extends BaseSchema {
       table.string('uuid').notNullable().unique();
       table.string('name').notNullable();
       table.text('description').nullable();
+      table.text('short_description').nullable();
       table.string('icon').nullable();
 
       table.timestamp('created_at').notNullable();
