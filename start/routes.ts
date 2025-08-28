@@ -38,8 +38,9 @@ router.get('/auth/me', [AuthController, 'me']).as('auth.me');
 
 // Onboarding Controller
 router.group(() => {
-  router.post('/onboarding', [OnboardingController, 'store']).as('onboarding.store');
 }).use(middleware.auth());
+
+router.post('/onboarding', [OnboardingController, 'store']).as('onboarding.store');
 
 router.get('/ping-transmit', () => {
   transmit.broadcast('global', { message: 'hello world' })
