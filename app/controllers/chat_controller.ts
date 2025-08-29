@@ -1,9 +1,13 @@
 // app/Controllers/Http/ChatController.ts
 import { HttpContext, Response } from '@adonisjs/core/http'
 import OpenAI from 'openai';
-import axios from 'axios';
+import { PokemonService, GreetingService, MathService, FoursquareService } from '#services/index';
 
 export default class ChatController {
+  private pokemonService = new PokemonService()
+  private greetingService = new GreetingService()
+  private mathService = new MathService()
+  private fourSquareService = new FoursquareService()
 
   public async createChat({ request, response }: HttpContext) {
     const { data } = request.body()
@@ -334,6 +338,31 @@ export default class ChatController {
             },
             required: ["greeting"]
           }
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "search_places",
+          description: "Get places as per search, longitude and latitude and radius by foursquare",
+          parameters: {
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description: "The query to search for, e.g. 'coffee', 'automobile', 'groceries near petrol pump'"
+              },
+              ll: {
+                type: "string",
+                description: "The longitude and latitude of the place to search for, e.g. '24.977006,67.211599'"
+              },
+              radius: {
+                type: "number",
+                description: "The radius within the place to search for, e.g. '2000'"
+              }
+            },
+            required: ["query", "ll", "radius"]
+          }
         }
       }
     ];
@@ -381,10 +410,13 @@ export default class ChatController {
           // Execute the specific tool
           switch (toolName) {
             case 'get_pokemon_info':
-              toolResult = await this.getPokemonInfo(toolArgs.pokemon_name);
+              toolResult = await this.pokemonService.getPokemonInfo(toolArgs.pokemon_name);
               break;
             case 'greet_hello_world':
-              toolResult = await this.greetHelloWorld();
+              toolResult = await this.greetingService.greetHelloWorld();
+              break;
+            case 'search_places':
+              toolResult = await this.fourSquareService.searchPlaces(toolArgs.query, toolArgs.ll, toolArgs.radius);
               break;
             default:
               toolResult = { error: `Unknown tool: ${toolName}` };
@@ -418,7 +450,7 @@ export default class ChatController {
       console.log("🔄 Asking AI for final response with tool results...");
       conversation.push({
         role: 'user',
-        content: 'Avoid mentioning the tool results directly in your conversations. If tool call is done or happened, then you can as if like very short explanation just as an initial introductive message. Beside, it is not always necessary to give response using the tool results. You decide when to response or not. Also, add a conclusion message at the end of your response. Use HTML tags for formatting, not markdown.'
+        content: 'Avoid mentioning the tool results directly in your conversations. Just give a very short explanation just as an initial introductive message. Beside, it is not always necessary to give response using the tool results. You decide when to response or not. Also, add a conclusion message at the end of your response. Use HTML tags for formatting.'
       });
 
       aiResponse = await openai.chat.completions.create({
@@ -458,124 +490,5 @@ export default class ChatController {
 
     console.log("📤 Sending response to user");
     return response.status(200).send(finalResponse);
-  }
-
-  public async getPokemonInfo(pokemonName: string) {
-    try {
-      const response = await axios.get(`https://pokeapi.co/api/v2/pokemon/${pokemonName.toLowerCase()}`)
-      const pokemon = response.data
-
-      return {
-        name: pokemon.name,
-        id: pokemon.id,
-        height: pokemon.height,
-        weight: pokemon.weight,
-        types: pokemon.types.map((type: any) => type.type.name),
-        abilities: pokemon.abilities.map((ability: any) => ability.ability.name),
-        stats: pokemon.stats.map((stat: any) => ({
-          name: stat.stat.name,
-          value: stat.base_stat
-        })),
-        sprite: pokemon.sprites.front_default,
-        is_error: false
-      }
-    } catch (error) {
-      console.error('Error fetching Pokemon info:', error)
-      return {
-        name: pokemonName,
-        is_error: true,
-        error_message: 'Failed to fetch Pokemon information',
-      }
-    }
-  }
-
-  public async greetHelloWorld() {
-    return "Hello World to you too!";
-  }
-
-  private async executeFunction(functionName: string, args: any) {
-    switch (functionName) {
-      case 'print_hello_world':
-        return { message: 'Hello World! 🌍' }
-
-      case 'get_weather':
-        // Using OpenWeatherMap API (you'll need to get an API key)
-        // For demo purposes, returning mock data
-        return {
-          location: args.location,
-          temperature: '22°C',
-          condition: 'Sunny',
-          humidity: '60%',
-          wind: '10 km/h'
-        }
-
-      case 'calculate_math':
-        const { operation, a, b } = args
-        let result: number
-
-        switch (operation) {
-          case 'add':
-            result = a + b
-            break
-          case 'subtract':
-            result = a - b
-            break
-          case 'multiply':
-            result = a * b
-            break
-          case 'divide':
-            result = b !== 0 ? a / b : NaN
-            break
-          case 'power':
-            result = Math.pow(a, b)
-            break
-          default:
-            throw new Error('Invalid operation')
-        }
-
-        return {
-          operation,
-          operand1: a,
-          operand2: b,
-          result,
-          expression: `${a} ${this.getOperationSymbol(operation)} ${b} = ${result} `
-        }
-
-      case 'get_pokemon_info':
-        try {
-          const response = await axios.get(`https://pokeapi.co/api/v2/pokemon/${args.pokemon_name.toLowerCase()}`)
-          const pokemon = response.data
-
-          return {
-            name: pokemon.name,
-            id: pokemon.id,
-            height: pokemon.height,
-            weight: pokemon.weight,
-            types: pokemon.types.map((type: any) => type.type.name),
-            abilities: pokemon.abilities.map((ability: any) => ability.ability.name),
-            stats: pokemon.stats.map((stat: any) => ({
-              name: stat.stat.name,
-              value: stat.base_stat
-            })),
-            sprite: pokemon.sprites.front_default
-          }
-        } catch (error) {
-          throw new Error(`Pokemon "${args.pokemon_name}" not found`)
-        }
-
-      default:
-        throw new Error('Unknown function')
-    }
-  }
-
-  private getOperationSymbol(operation: string): string {
-    const symbols = {
-      add: '+',
-      subtract: '-',
-      multiply: '*',
-      divide: '/',
-      power: '^'
-    }
-    return symbols[operation as keyof typeof symbols] || operation
   }
 }
