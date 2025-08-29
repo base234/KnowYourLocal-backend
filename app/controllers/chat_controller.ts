@@ -106,6 +106,31 @@ export default class ChatController {
             required: ["pokemon_name"]
           }
         }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "search_places",
+          description: "Get places as per search, longitude and latitude and radius by foursquare",
+          parameters: {
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description: "The query to search for, e.g. 'coffee', 'automobile', 'groceries near petrol pump'"
+              },
+              ll: {
+                type: "string",
+                description: "The longitude and latitude of the place to search for, e.g. '24.977006,67.211599'"
+              },
+              radius: {
+                type: "number",
+                description: "The radius within the place to search for, e.g. '2000'"
+              }
+            },
+            required: ["query"]
+          }
+        }
       }
     ]
 
@@ -358,7 +383,7 @@ export default class ChatController {
               },
               radius: {
                 type: "number",
-                description: "The radius within the place to search for, e.g. '2000'"
+                description: "The radius within the place to search for in meters, e.g. '2000'"
               }
             },
             required: ["query", "ll", "radius"]
@@ -416,7 +441,11 @@ export default class ChatController {
               toolResult = await this.greetingService.greetHelloWorld();
               break;
             case 'search_places':
-              toolResult = await this.fourSquareService.searchPlaces(toolArgs.query, toolArgs.ll, toolArgs.radius);
+              toolResult = await this.fourSquareService.searchPlaces(
+                toolArgs.query,
+                toolArgs.ll || undefined,
+                toolArgs.radius || undefined
+              );
               break;
             default:
               toolResult = { error: `Unknown tool: ${toolName}` };
@@ -450,7 +479,7 @@ export default class ChatController {
       console.log("🔄 Asking AI for final response with tool results...");
       conversation.push({
         role: 'user',
-        content: 'Avoid mentioning the tool results directly in your conversations. Just give a very short explanation just as an initial introductive message. Beside, it is not always necessary to give response using the tool results. You decide when to response or not. Also, add a conclusion message at the end of your response. Use HTML tags for formatting.'
+        content: 'Avoid mentioning the tool in your conversations. Just give a very short explanation just as an initial introductive message. Beside, avoid necessity to always give responses using the tool results. Also, add a conclusion message at the end of your response. Use HTML tags for formatting.'
       });
 
       aiResponse = await openai.chat.completions.create({
