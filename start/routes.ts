@@ -38,27 +38,28 @@ router.get('/auth/me', [AuthController, 'me']).as('auth.me');
 
 // Onboarding Controller
 router.group(() => {
+  router.post('/onboarding/create-local', [OnboardingController, 'createLocal']).as('onboarding.createLocal');
 }).use(middleware.auth());
 
-router.post('/onboarding', [OnboardingController, 'store']).as('onboarding.store');
 
 router.get('/ping-transmit', () => {
   transmit.broadcast('global', { message: 'hello world' })
 })
 
+// Local Types CRUD Routes
+router.group(() => {
+  router.get('/local-types', [LocalTypesController, 'index']).as('local-types.index');
+  router.get('/local-types/:id', [LocalTypesController, 'show']).as('local-types.show');
+}).use(middleware.auth());
+
+// Locals CRUD Routes
+router.group(() => {
+  router.get('/locals', [LocalsController, 'index']).as('locals.index');
+  router.get('/locals/:id', [LocalsController, 'show']).as('locals.show');
+  router.post('/locals', [LocalsController, 'store']).as('locals.store');
+}).use(middleware.auth());
+
 router.post('/chats', [ChatController, 'createChat']).as('chat.createChat');
 router.post('/chats/stream-text', [ChatController, 'streamText']).as('chat.streamText');
 
-// Local Types CRUD Routes
-router.get('/local-types', [LocalTypesController, 'index']).as('local-types.index');
-router.get('/local-types/:id', [LocalTypesController, 'show']).as('local-types.show');
-router.post('/local-types', [LocalTypesController, 'store']).as('local-types.store');
-router.put('/local-types/:id', [LocalTypesController, 'update']).as('local-types.update');
-router.delete('/local-types/:id', [LocalTypesController, 'destroy']).as('local-types.destroy');
 
-// Locals CRUD Routes
-router.get('/locals', [LocalsController, 'index']).as('locals.index');
-router.get('/locals/:id', [LocalsController, 'show']).as('locals.show');
-router.post('/locals', [LocalsController, 'store']).as('locals.store');
-router.put('/locals/:id', [LocalsController, 'update']).as('locals.update');
-router.delete('/locals/:id', [LocalsController, 'destroy']).as('locals.destroy');

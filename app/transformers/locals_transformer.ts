@@ -1,39 +1,28 @@
 import Locals from '#models/locals'
 
 export default class LocalsTransformer {
-  static transform(local: Locals) {
+  public static async transform(local: Locals) {
     return {
-      id: local.id,
       uuid: local.uuid,
       name: local.name,
       description: local.description,
       local_type_id: local.local_type_id,
       local_type: local.local_type ? {
-        id: local.local_type.id,
-        name: local.local_type.name,
-        description: local.local_type.description,
+        id: local.local_type.uuid,
         icon: local.local_type.icon,
+        name: local.local_type.name,
+        short_description: local.local_type.short_description,
+        description: local.local_type.description,
       } : null,
+      co_ordinates: local.co_ordinates,
+      location_search_query: local.location_search_query,
+      radius: local.radius,
       created_at: local.createdAt?.toISO(),
       updated_at: local.updatedAt?.toISO(),
     }
   }
 
-  static transformMany(locals: Locals[]) {
-    return locals.map(local => this.transform(local))
-  }
-
-  static transformPaginated(paginatedData: any) {
-    return {
-      data: this.transformMany(paginatedData.rows || []),
-      meta: {
-        current_page: paginatedData.currentPage,
-        last_page: paginatedData.lastPage,
-        per_page: paginatedData.perPage,
-        total: paginatedData.total,
-        from: paginatedData.firstPage,
-        to: paginatedData.lastPage,
-      },
-    }
+  public static async collection(locals: Locals[]) {
+    return Promise.all(locals.map((local) => this.transform(local)))
   }
 }

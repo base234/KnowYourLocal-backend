@@ -2,7 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, column, beforeCreate, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import LocalTypes from './local_types.js'
-import User from './user.js'
+import Customer from './customer.js'
 
 export default class Locals extends BaseModel {
   @column({ isPrimary: true })
@@ -16,20 +16,29 @@ export default class Locals extends BaseModel {
   }
 
   @column()
+  declare customer_id: number | null
+  @belongsTo(() => Customer, { foreignKey: 'customer_id' })
+  declare customer: BelongsTo<typeof Customer>
+
+  @column()
   declare local_type_id: number | null
   @belongsTo(() => LocalTypes, { foreignKey: 'local_type_id' })
   declare local_type: BelongsTo<typeof LocalTypes>
-
-  @column()
-  declare user_id: number | null
-  @belongsTo(() => User, { foreignKey: 'user_id' })
-  declare user: BelongsTo<typeof User>
 
   @column()
   declare name: string
 
   @column()
   declare description: string | null
+
+  @column()
+  declare co_ordinates: string | null
+
+  @column()
+  declare location_search_query: string | null
+
+  @column()
+  declare radius: number | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

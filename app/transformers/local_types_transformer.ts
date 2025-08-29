@@ -1,20 +1,19 @@
 import LocalTypes from '#models/local_types'
 
 export default class LocalTypesTransformer {
-  static transform(localType: LocalTypes) {
+  public static async transform(localType: LocalTypes) {
     return {
-      id: localType.id,
-      uuid: localType.uuid,
+      id: localType.uuid,
+      icon: localType.icon,
       name: localType.name,
       description: localType.description,
       short_description: localType.short_description,
-      icon: localType.icon,
       created_at: localType.createdAt?.toISO(),
       updated_at: localType.updatedAt?.toISO(),
     }
   }
 
-  static transformMany(localTypes: LocalTypes[]) {
-    return localTypes.map(localType => this.transform(localType))
+  public static async collection(localTypes: LocalTypes[]) {
+    return Promise.all(localTypes.map(localType => LocalTypesTransformer.transform(localType)))
   }
 }

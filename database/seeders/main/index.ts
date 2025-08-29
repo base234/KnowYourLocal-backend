@@ -19,8 +19,8 @@ export default class Index extends BaseSeeder {
   }
 
   async run() {
-    await this.seed(await import('#database/seeders/role_seeder'))
-    await this.seed(await import('#database/seeders/local_types_seeder'))
+    // await this.seed(await import('#database/seeders/role_seeder'))
+    // await this.seed(await import('#database/seeders/local_types_seeder'))
     // await this.seed(await import('#database/seeders/crop_types_seeder'))
   }
 }

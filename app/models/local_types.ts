@@ -13,16 +13,16 @@ export default class LocalTypes extends BaseModel {
   }
 
   @column()
+  declare icon: string | null
+
+  @column()
   declare name: string
 
   @column()
   declare description: string | null
-  
-  @column()
-  declare short_description: string | null
 
   @column()
-  declare icon: string | null
+  declare short_description: string | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

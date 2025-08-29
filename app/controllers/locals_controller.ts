@@ -1,180 +1,78 @@
 import { HttpContext } from '@adonisjs/core/http'
 import Locals from '#models/locals'
-import LocalTypes from '#models/local_types'
 import LocalsTransformer from '#transformers/locals_transformer'
-import User from '#models/user'
+import LocalTypes from '#models/local_types';
 
 export default class LocalsController {
-  /**
-   * Display a list of locals
-   */
-  async index({ request, response }: HttpContext) {
-    try {
-      const query = Locals.query()
-      
-      // Add local_type_id filter if provided
-      const localTypeId = request.input('local_type_id')
-      if (localTypeId) {
-        query.where('local_type_id', localTypeId)
-      }
-      
-      // Add search by name if provided
-      const search = request.input('search')
-      if (search) {
-        query.whereILike('name', `%${search}%`)
-      }
-      
-      // Add pagination
-      const page = request.input('page', 1)
-      const limit = request.input('limit', 20)
-      
-      // Now try with preload
-      const locals = await query
-        // .preload('local_type')  // Temporarily commented out to test
-        .paginate(page, limit)
-      // return locals
-      return response.ok(LocalsTransformer.transformPaginated(locals))
-    } catch (error) {
-      return response.internalServerError({
-        message: 'Failed to fetch locals',
-        error: error.message
-      })
-    }
+  async index({ response }: HttpContext) {
+    const locals = await Locals.all();
+    return response.status(200).json({
+      status: 'success',
+      data: await LocalsTransformer.collection(locals),
+    });
   }
 
-  /**
-   * Display a single local
-   */
-  async show({ params, response }: HttpContext) {
-    try {
-      const local = await Locals.query()
-        .where('id', params.id)
-        .preload('local_type')
-        .firstOrFail()
-      
-      return response.ok(LocalsTransformer.transform(local))
-    } catch (error) {
-      if (error.code === 'E_ROW_NOT_FOUND') {
-        return response.notFound({
-          message: 'Local not found'
-        })
-      }
-      return response.internalServerError({
-        message: 'Failed to fetch local',
-        error: error.message
-      })
+  async show({ response, params }: HttpContext) {
+    const local = await Locals.query().where('uuid', params.id).first();
+
+    if (!local) {
+      return response.status(404).json({
+        status: 'error',
+        message: 'Local not found',
+      });
     }
+
+    return response.status(200).json({
+      status: 'success',
+      message: 'Local fetched successfully',
+      data: await LocalsTransformer.transform(local),
+    });
   }
 
-  /**
-   * Create a new local
-   */
-  async store({ request, response }: HttpContext) {
-    try {
-      const data = request.only(['name', 'description', 'local_type_id','user_id'])
-      
-      // Validate required fields
-      if (!data.name) {
-        return response.badRequest({
-          message: 'Name is required'
-        })
-      }
-      if (!data.user_id) {
-        return response.badRequest({
-          message: 'User ID is required'
-        })
-      }
-      const user = await User.query().where('uuid', data.user_id).first()
-      if (!user) {
-        return response.badRequest({
-          message: 'User not found'
-        })
-      }
-      data.user_id = user.id
+  async store({ request, response, auth }: HttpContext) {
+    const { data } = request.all();
 
-      // Validate local_type_id exists if provided
-      if (data.local_type_id) {
-        const localType = await LocalTypes.find(data.local_type_id)
-        if (!localType) {
-          return response.badRequest({
-            message: 'Invalid local type ID'
-          })
-        }
-      }
+    const customer_id = auth.user!.customer?.id;
 
-      const local = await Locals.create(data)
-      
-      // Reload with local_type relationship
-      await local.load('local_type')
-      
-      return response.created(LocalsTransformer.transform(local))
-    } catch (error) {
-      return response.internalServerError({
+    const localType = await LocalTypes.query().where('uuid', data.local_type_id).first();
+
+    if (!localType) {
+      return response.status(400).send({
+        status: 'error',
+        message: 'Local type not found',
+      })
+    }
+
+    const local = await Locals.query().where('uuid', data.id).first();
+
+    if (local) {
+      return response.status(400).json({
+        status: 'error',
+        message: 'Local already exists',
+      });
+    }
+
+    const new_local = await Locals.create({
+      local_type_id: localType.id,
+      customer_id: customer_id,
+      name: data.local_name,
+      description: data.description,
+      co_ordinates: data.co_ordinates,
+      location_search_query: data.location_search_query,
+      radius: data.radius,
+    })
+
+    if (!new_local) {
+      return response.status(400).json({
+        status: 'error',
         message: 'Failed to create local',
-        error: error.message
-      })
+      });
     }
-  }
 
-  /**
-   * Update a local
-   */
-  async update({ params, request, response }: HttpContext) {
-    try {
-      const local = await Locals.findOrFail(params.id)
-      const data = request.only(['name', 'detail', 'local_type_id'])
-      
-      // Validate local_type_id exists if provided
-      if (data.local_type_id) {
-        const localType = await LocalTypes.find(data.local_type_id)
-        if (!localType) {
-          return response.badRequest({
-            message: 'Invalid local type ID'
-          })
-        }
-      }
-      
-      local.merge(data)
-      await local.save()
-      
-      // Reload with local_type relationship
-      await local.load('local_type')
-      
-      return response.ok(LocalsTransformer.transform(local))
-    } catch (error) {
-      if (error.code === 'E_ROW_NOT_FOUND') {
-        return response.notFound({
-          message: 'Local not found'
-        })
-      }
-      return response.internalServerError({
-        message: 'Failed to update local',
-        error: error.message
-      })
-    }
-  }
-
-  /**
-   * Delete a local
-   */
-  async destroy({ params, response }: HttpContext) {
-    try {
-      const local = await Locals.findOrFail(params.id)
-      await local.delete()
-      
-      return response.ok({
-        message: 'Local deleted successfully'
-      })
-    } catch (error) {
-      if (error.code === 'E_ROW_NOT_FOUND') {
-        return response.notFound({
-          message: 'Local not found'
-        })
-      }
-      return response.internalServerError({
-        message: 'Failed to delete local',
-        error: error.message
-      })
-    }
+    return response.status(201).json({
+      status: 'success',
+      message: 'Local created successfully',
+      data: await LocalsTransformer.transform(new_local),
+    });
   }
 }
