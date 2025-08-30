@@ -37,7 +37,7 @@ export class FoursquareService {
     query: string,
     ll?: string,
     radius?: number,
-    // fsq_category_ids?: string,
+    fsq_category_ids?: string,
     // fsq_chain_ids?: string,
     // exclude_fsq_chain_ids?: string,
     // exclude_all_chains?: boolean,
@@ -59,7 +59,7 @@ export class FoursquareService {
 
       if (ll) params.ll = ll;
       if (radius) params.radius = radius;
-      // if (fsq_category_ids) params.fsq_category_ids = fsq_category_ids;
+      if (fsq_category_ids) params.fsq_category_ids = fsq_category_ids;
       // if (fsq_chain_ids) params.fsq_chain_ids = fsq_chain_ids;
       // if (exclude_fsq_chain_ids) params.exclude_fsq_chain_ids = exclude_fsq_chain_ids;
       // if (exclude_all_chains !== undefined) params.exclude_all_chains = exclude_all_chains;
@@ -95,6 +95,87 @@ export class FoursquareService {
       return {
         is_error: true,
         error_message: 'Failed to fetch Foursquare information',
+      }
+    }
+  }
+
+  /**
+   * Extract unique categories from search results
+   * This method processes the search results and extracts unique categories
+   * with their fsq_category_id, fsq_place_id, and icon information
+   * 
+   * @param searchResults - The results from searchPlaces method
+   * @returns Array of unique categories with required information
+   */
+  public extractUniqueCategories(searchResults: any) {
+    if (!searchResults || !searchResults.results || !Array.isArray(searchResults.results)) {
+      return [];
+    }
+
+    const categoryMap = new Map();
+
+    searchResults.results.forEach((place: any) => {
+      if (place.categories && Array.isArray(place.categories)) {
+        place.categories.forEach((category: any) => {
+          const categoryKey = category.fsq_category_id;
+          
+          if (!categoryMap.has(categoryKey)) {
+            categoryMap.set(categoryKey, {
+              fsq_category_id: category.fsq_category_id,
+              fsq_place_id: place.fsq_place_id,
+              plural_name: category.plural_name,
+              name: category.name,
+              short_name: category.short_name,
+              icon: category.icon
+            });
+          }
+        });
+      }
+    });
+
+    return Array.from(categoryMap.values());
+  }
+
+  /**
+   * Quick Find: Search for places and extract unique categories
+   * This is the main method for the Quick Find functionality
+   * 
+   * @param query - Search query (e.g., "krishna")
+   * @param ll - Latitude/longitude (e.g., "18.5941,73.7345")
+   * @param radius - Search radius in meters
+   * @param fsq_category_ids - Optional category filter
+   * @returns Object with search results and unique categories
+   */
+  public async quickFind(
+    query: string,
+    ll?: string,
+    radius?: number,
+    fsq_category_ids?: string
+  ) {
+    try {
+      // First, search for places
+      const searchResult = await this.searchPlaces(query, ll, radius, fsq_category_ids);
+      
+      if (searchResult.is_error) {
+        return searchResult;
+      }
+
+      // Extract unique categories from the search results
+      const uniqueCategories = this.extractUniqueCategories(searchResult.data);
+
+      return {
+        is_error: false,
+        data: {
+          search_results: searchResult.data,
+          unique_categories: uniqueCategories,
+          total_categories_found: uniqueCategories.length
+        }
+      };
+
+    } catch (error) {
+      return {
+        is_error: true,
+        error_message: 'Failed to perform Quick Find search',
       }
     }
   }

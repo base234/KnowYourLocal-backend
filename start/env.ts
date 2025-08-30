@@ -68,4 +68,7 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   FOURSQUARE_PLACES_API_VERSION: Env.schema.string.optional(),
   FOURSQUARE_SERVICE_API_KEY: Env.schema.string.optional(),
+  FOURSQUARE_PLACES_API: Env.schema.string.optional(),
+  FOURSQUARE_API_VERSION: Env.schema.string.optional(),
+  FOURSQUARE_SERVICE_KEY: Env.schema.string.optional(),
 })
