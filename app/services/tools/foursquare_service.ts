@@ -50,8 +50,8 @@ export class FoursquareService {
     // ne?: string,
     // sw?: string,
     // near?: string,
-    // sort?: string,
-    // limit?: number,
+    sort?: string | "DISTANCE",
+    limit?: number,
   ) {
     try {
       // Build query parameters
@@ -72,8 +72,8 @@ export class FoursquareService {
       // if (ne) params.ne = ne;
       // if (sw) params.sw = sw;
       // if (near) params.near = near;
-      // if (sort) params.sort = sort;
-      // if (limit) params.limit = limit;
+      if (sort) params.sort = sort;
+      if (limit) params.limit = limit;
 
       const response = await axios.get(`${this.baseUrl}/search`, {
         params,
@@ -150,11 +150,13 @@ export class FoursquareService {
     query: string,
     ll?: string,
     radius?: number,
-    fsq_category_ids?: string
+    fsq_category_ids?: string,
+    limit?: number,
+    sort?: string
   ) {
     try {
       // First, search for places
-      const searchResult = await this.searchPlaces(query, ll, radius, fsq_category_ids);
+      const searchResult = await this.searchPlaces(query, ll, radius, fsq_category_ids, sort, limit);
       
       if (searchResult.is_error) {
         return searchResult;

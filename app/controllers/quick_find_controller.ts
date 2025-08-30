@@ -14,11 +14,12 @@ export default class QuickFindController {
    */
   public async search(ctx: HttpContext) {
     try {
-      const { query, ll, radius, fsq_category_ids } = ctx.request.only([
+      const { query, ll, radius, fsq_category_ids, limit } = ctx.request.only([
         'query',
         'll', 
         'radius',
-        'fsq_category_ids'
+        'fsq_category_ids',
+        'limit'
       ])
 
       // // Validate required parameters
@@ -59,7 +60,8 @@ export default class QuickFindController {
         query,
         ll,
         radius ? Number(radius) : undefined,
-        fsq_category_ids
+        fsq_category_ids,
+        limit ? Number(limit) : 10
       )
 
       if (result.is_error) {
@@ -96,7 +98,7 @@ export default class QuickFindController {
    */
   public async getLocationCategories(ctx: HttpContext) {
     try {
-      const { ll, radius, fsq_category_ids } = ctx.request.only(['ll', 'radius', 'fsq_category_ids'])
+      const { ll, radius, fsq_category_ids, limit } = ctx.request.only(['ll', 'radius', 'fsq_category_ids', 'limit'])
 
 
     //   // Validate ll format
@@ -115,7 +117,8 @@ export default class QuickFindController {
         '', // Empty query to get all places in the area
         ll,
         radius ? Number(radius) : undefined,
-        fsq_category_ids ? fsq_category_ids : undefined
+        fsq_category_ids ? fsq_category_ids : undefined,
+        limit ? Number(limit) : 10
       )
 
       if (result.is_error) {
