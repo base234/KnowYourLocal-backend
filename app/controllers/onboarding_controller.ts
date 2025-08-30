@@ -1,35 +1,58 @@
 import type { HttpContext } from '@adonisjs/core/http'
-
-import User from '#models/user'
+import Locals from '#models/locals';
+import LocalsTransformer from '#transformers/locals_transformer';
+import Customer from '#models/customer';
+import User from '#models/user';
+import LocalTypes from '#models/local_types';
 
 export default class OnboardingController {
 
-  async store({ request, response, auth }: HttpContext) {
+  async createLocal({ request, response, auth }: HttpContext) {
     const { data } = request.all();
 
-    const user = await User.find(auth.user!.id);
+    const userId: number | undefined = auth.user?.id;
+    const customerId: number | undefined = auth.user?.customer?.id;
 
-    if (!user) {
-      return response.status(404).send({
+    if (!userId || !customerId) {
+      return response.status(400).send({
         status: 'error',
-        message: 'User question not found',
+        message: 'User not found',
       })
     }
 
-    if (!data.onboarding_answers || Object.keys(data.onboarding_answers).length === 0) {
+    const localType = await LocalTypes.query().where('uuid', data.local_type_id).first();
+
+    if (!localType) {
       return response.status(400).send({
         status: 'error',
-        message: 'Onboarding answers are required',
-      });
+        message: 'Local type not found',
+      })
     }
 
-    user.onboarding_answers = data.onboarding_answers;
-    user.is_onboarding_complete = true;
-    await user.save();
+    const new_local = await Locals.create({
+      customer_id: customerId,
+      local_type_id: localType.id,
+      name: data.local_name,
+      description: data.description,
+      co_ordinates: data.co_ordinates,
+      location_search_query: data.location_search_query,
+      radius: data.radius,
+    })
+
+    if (!new_local) {
+      return response.status(400).send({
+        status: 'error',
+        message: 'Failed to create local',
+      })
+    }
+
+    await User.query().where('id', userId).update({ is_onboarding_complete: 1 });
+    await Customer.query().where('id', customerId).update({ is_event_created: 1 });
 
     return response.status(200).send({
       status: 'success',
-      message: 'Request completed successfully',
-    });
+      message: 'Local created successfully',
+      data: await LocalsTransformer.transform(new_local),
+    })
   }
 }

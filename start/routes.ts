@@ -12,6 +12,8 @@ import router from '@adonisjs/core/services/router'
 import AuthController from '#controllers/auth_controller';
 import OnboardingController from '#controllers/onboarding_controller';
 import CustomerController from '#controllers/customer_controller';
+import LocalTypesController from '#controllers/local_types_controller';
+import LocalsController from '#controllers/locals_controller';
 import transmit from '@adonisjs/transmit/services/main'
 import ChatController from '#controllers/chat_controller';
 transmit.registerRoutes()
@@ -36,13 +38,28 @@ router.get('/auth/me', [AuthController, 'me']).as('auth.me');
 
 // Onboarding Controller
 router.group(() => {
-  router.post('/onboarding', [OnboardingController, 'store']).as('onboarding.store');
+  router.post('/onboarding/create-local', [OnboardingController, 'createLocal']).as('onboarding.createLocal');
 }).use(middleware.auth());
+
 
 router.get('/ping-transmit', () => {
   transmit.broadcast('global', { message: 'hello world' })
 })
 
+// Local Types CRUD Routes
+router.group(() => {
+  router.get('/local-types', [LocalTypesController, 'index']).as('local-types.index');
+  router.get('/local-types/:id', [LocalTypesController, 'show']).as('local-types.show');
+}).use(middleware.auth());
+
+// Locals CRUD Routes
+router.group(() => {
+  router.get('/locals', [LocalsController, 'index']).as('locals.index');
+  router.get('/locals/:id', [LocalsController, 'show']).as('locals.show');
+  router.post('/locals', [LocalsController, 'store']).as('locals.store');
+}).use(middleware.auth());
+
 router.post('/chats', [ChatController, 'createChat']).as('chat.createChat');
-router.get('/chats/stream', [ChatController, 'streamChat']).as('chat.streamChat');
 router.post('/chats/stream-text', [ChatController, 'streamText']).as('chat.streamText');
+
+

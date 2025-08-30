@@ -1,0 +1,25 @@
+import { BaseSchema } from '@adonisjs/lucid/schema'
+
+export default class extends BaseSchema {
+  protected tableName = 'local_types'
+
+  async up() {
+    this.schema.createTable(this.tableName, (table) => {
+      table.increments('id').unsigned().primary().notNullable();
+
+      table.string('uuid').notNullable().unique();
+
+      table.string('icon').nullable();
+      table.string('name').nullable();
+      table.text('description').nullable();
+      table.text('short_description').nullable();
+
+      table.timestamp('created_at').notNullable();
+      table.timestamp('updated_at').nullable();
+    })
+  }
+
+  async down() {
+    this.schema.dropTable(this.tableName)
+  }
+}

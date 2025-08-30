@@ -20,6 +20,12 @@ export default class AuthMiddleware {
     } = {}
   ) {
     await ctx.auth.authenticateUsing(options.guards, { loginRoute: this.redirectTo })
+
+    // Automatically load customer relationship for authenticated users
+    if (ctx.auth.user) {
+      await ctx.auth.user.load('customer')
+    }
+
     return next()
   }
 }

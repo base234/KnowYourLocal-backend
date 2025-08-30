@@ -1,0 +1,32 @@
+import { DateTime } from 'luxon'
+import { BaseModel, column, beforeCreate } from '@adonisjs/lucid/orm'
+
+export default class LocalTypes extends BaseModel {
+  @column({ isPrimary: true })
+  declare id: number
+
+  @column()
+  declare uuid: string
+  @beforeCreate()
+  static assignUuid(localType: LocalTypes) {
+    localType.uuid = crypto.randomUUID()
+  }
+
+  @column()
+  declare icon: string | null
+
+  @column()
+  declare name: string
+
+  @column()
+  declare description: string | null
+
+  @column()
+  declare short_description: string | null
+
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
