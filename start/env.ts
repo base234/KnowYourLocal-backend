@@ -72,10 +72,10 @@ export default await Env.create(new URL('../', import.meta.url), {
   |----------------------------------------------------------
   */
   FOURSQUARE_API_VERSION: Env.schema.string(),
-  FOURSQUARE_SERVICE_KEY: Env.schema.string(),
-  FOURSQUARE_CLIENT_ID: Env.schema.string(),
-  FOURSQUARE_CLIENT_SECRET: Env.schema.string(),
   FOURSQUARE_PLACES_API: Env.schema.string(),
+  FOURSQUARE_SERVICE_KEY: Env.schema.string(),
+  FOURSQUARE_CLIENT_ID: Env.schema.string.optional(),
+  FOURSQUARE_CLIENT_SECRET: Env.schema.string.optional(),
 
   /*
   |----------------------------------------------------------
