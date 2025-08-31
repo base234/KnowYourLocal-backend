@@ -1,3 +1,4 @@
+// @ts-ignore
 import axios from 'axios';
 
 export class FoursquareService {
@@ -103,7 +104,7 @@ export class FoursquareService {
    * Extract unique categories from search results
    * This method processes the search results and extracts unique categories
    * with their fsq_category_id, fsq_place_id, and icon information
-   * 
+   *
    * @param searchResults - The results from searchPlaces method
    * @returns Array of unique categories with required information
    */
@@ -118,7 +119,7 @@ export class FoursquareService {
       if (place.categories && Array.isArray(place.categories)) {
         place.categories.forEach((category: any) => {
           const categoryKey = category.fsq_category_id;
-          
+
           if (!categoryMap.has(categoryKey)) {
             categoryMap.set(categoryKey, {
               fsq_category_id: category.fsq_category_id,
@@ -139,7 +140,7 @@ export class FoursquareService {
   /**
    * Quick Find: Search for places and extract unique categories
    * This is the main method for the Quick Find functionality
-   * 
+   *
    * @param query - Search query (e.g., "krishna")
    * @param ll - Latitude/longitude (e.g., "18.5941,73.7345")
    * @param radius - Search radius in meters
@@ -157,7 +158,7 @@ export class FoursquareService {
     try {
       // First, search for places
       const searchResult = await this.searchPlaces(query, ll, radius, fsq_category_ids, sort, limit);
-      
+
       if (searchResult.is_error) {
         return searchResult;
       }
@@ -185,7 +186,7 @@ export class FoursquareService {
   /**
    * Get photos for a specific place using fsq_place_id
    * This method fetches photos from Foursquare's Places API
-   * 
+   *
    * @param fsq_place_id - Foursquare place ID
    * @returns Array of photos with metadata
    */
@@ -218,7 +219,7 @@ export class FoursquareService {
 
     } catch (error) {
       console.error('Foursquare Photos API Error:', error);
-      
+
       // Handle specific error cases
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 404) {

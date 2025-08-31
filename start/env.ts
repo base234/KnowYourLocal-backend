@@ -66,9 +66,21 @@ export default await Env.create(new URL('../', import.meta.url), {
   REDIS_PORT: Env.schema.number(),
   REDIS_PASSWORD: Env.schema.string.optional(),
 
-  FOURSQUARE_PLACES_API_VERSION: Env.schema.string.optional(),
-  FOURSQUARE_SERVICE_API_KEY: Env.schema.string.optional(),
-  FOURSQUARE_PLACES_API: Env.schema.string.optional(),
-  FOURSQUARE_API_VERSION: Env.schema.string.optional(),
-  FOURSQUARE_SERVICE_KEY: Env.schema.string.optional(),
+  /*
+  |----------------------------------------------------------
+  | Variables for Foursquare
+  |----------------------------------------------------------
+  */
+  FOURSQUARE_PLACES_API: Env.schema.string(),
+  FOURSQUARE_API_VERSION: Env.schema.string(),
+  FOURSQUARE_SERVICE_KEY: Env.schema.string(),
+  FOURSQUARE_CLIENT_ID: Env.schema.string.optional(),
+  FOURSQUARE_CLIENT_SECRET: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for OpenAI
+  |----------------------------------------------------------
+  */
+  OPENAI_API_KEY: Env.schema.string(),
 })
