@@ -3,7 +3,7 @@ import Locals from '#models/locals'
 export default class LocalsTransformer {
   public static async transform(local: Locals) {
     return {
-      uuid: local.uuid,
+      id: local.uuid,
       name: local.name,
       description: local.description,
       local_type_id: local.local_type_id,

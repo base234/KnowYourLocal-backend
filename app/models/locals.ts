@@ -1,8 +1,9 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, beforeCreate, belongsTo } from '@adonisjs/lucid/orm'
-import type { BelongsTo } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, beforeCreate, belongsTo, hasMany } from '@adonisjs/lucid/orm'
+import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import LocalTypes from './local_types.js'
 import Customer from './customer.js'
+import Messages from './messages.js'
 
 export default class Locals extends BaseModel {
   @column({ isPrimary: true })
@@ -40,10 +41,12 @@ export default class Locals extends BaseModel {
   @column()
   declare radius: number | null
 
+  @hasMany(() => Messages, { foreignKey: 'local_id' })
+  declare messages: HasMany<typeof Messages>
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  @column.dateTime({ autoUpdate: true })
   declare updatedAt: DateTime
-
 }

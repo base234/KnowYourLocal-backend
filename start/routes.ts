@@ -57,11 +57,12 @@ router.group(() => {
 // Locals CRUD Routes
 router.group(() => {
   router.get('/locals', [LocalsController, 'index']).as('locals.index');
-  router.get('/locals/:id', [LocalsController, 'show']).as('locals.show');
+  router.get('/locals/:local_id', [LocalsController, 'show']).as('locals.show');
+  router.get('/locals/:local_id/chats', [LocalsController, 'indexChats']).as('locals.indexChats');
   router.post('/locals', [LocalsController, 'store']).as('locals.store');
+  router.post('/locals/:local_id/chats', [LocalsController, 'chats']).as('locals.chats');
 }).use(middleware.auth());
 
-router.post('/chats', [ChatController, 'createChat']).as('chat.createChat');
 router.post('/chats/stream-text', [ChatController, 'streamText']).as('chat.streamText');
 
 // Quick Find Routes
@@ -75,5 +76,7 @@ router.group(() => {
   router.get('/photos/place', [PhotosController, 'getPlacePhotos']).as('photos.place');
   router.get('/photos/place/:fsq_place_id', [PhotosController, 'getPlacePhotosByPath']).as('photos.placeByPath');
 }).use(middleware.auth());
+
+
 
 
