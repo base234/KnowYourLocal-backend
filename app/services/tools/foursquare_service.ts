@@ -181,4 +181,70 @@ export class FoursquareService {
       }
     }
   }
+
+  /**
+   * Get photos for a specific place using fsq_place_id
+   * This method fetches photos from Foursquare's Places API
+   * 
+   * @param fsq_place_id - Foursquare place ID
+   * @returns Array of photos with metadata
+   */
+  public async getPlacePhotos(fsq_place_id: string, limit: number = 5) {
+    try {
+      if (!fsq_place_id) {
+        return {
+          is_error: true,
+          error_message: 'fsq_place_id is required',
+        };
+      }
+
+      const response = await axios.get(`${this.baseUrl}/${fsq_place_id}/photos`, {
+        params: {
+          limit: limit
+        },
+        headers: {
+          'X-Places-Api-Version': this.apiVersion,
+          'accept': 'application/json',
+          'authorization': `Bearer ${this.authToken}`
+        }
+      });
+
+      const responseData = response.data;
+
+      return {
+        is_error: false,
+        data: responseData,
+      };
+
+    } catch (error) {
+      console.error('Foursquare Photos API Error:', error);
+      
+      // Handle specific error cases
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          return {
+            is_error: true,
+            error_message: 'Place not found or no photos available',
+          };
+        }
+        if (error.response?.status === 401) {
+          return {
+            is_error: true,
+            error_message: 'Unauthorized - Invalid API key',
+          };
+        }
+        if (error.response?.status === 429) {
+          return {
+            is_error: true,
+            error_message: 'Rate limit exceeded - Please try again later',
+          };
+        }
+      }
+
+      return {
+        is_error: true,
+        error_message: 'Failed to fetch photos from Foursquare',
+      };
+    }
+  }
 }
