@@ -16,6 +16,8 @@ import LocalTypesController from '#controllers/local_types_controller';
 import LocalsController from '#controllers/locals_controller';
 import transmit from '@adonisjs/transmit/services/main'
 import ChatController from '#controllers/chat_controller';
+import QuickFindController from '#controllers/quick_find_controller';
+import PhotosController from '#controllers/photos_controller';
 transmit.registerRoutes()
 
 
@@ -62,6 +64,18 @@ router.group(() => {
 }).use(middleware.auth());
 
 router.post('/chats/stream-text', [ChatController, 'streamText']).as('chat.streamText');
+
+// Quick Find Routes
+router.group(() => {
+  router.post('/quick-find/search', [QuickFindController, 'search']).as('quick-find.search');
+  router.get('/quick-find/location-categories', [QuickFindController, 'getLocationCategories']).as('quick-find.locationCategories');
+}).use(middleware.auth());
+
+// Photos Routes
+router.group(() => {
+  router.get('/photos/place', [PhotosController, 'getPlacePhotos']).as('photos.place');
+  router.get('/photos/place/:fsq_place_id', [PhotosController, 'getPlacePhotosByPath']).as('photos.placeByPath');
+}).use(middleware.auth());
 
 
 

@@ -37,7 +37,7 @@ export class FoursquareService {
     query: string,
     ll?: string,
     radius?: number,
-    // fsq_category_ids?: string,
+    fsq_category_ids?: string,
     // fsq_chain_ids?: string,
     // exclude_fsq_chain_ids?: string,
     // exclude_all_chains?: boolean,
@@ -50,8 +50,8 @@ export class FoursquareService {
     // ne?: string,
     // sw?: string,
     // near?: string,
-    // sort?: string,
-    // limit?: number,
+    sort?: string | "DISTANCE",
+    limit?: number,
   ) {
     try {
       // Build query parameters
@@ -59,7 +59,7 @@ export class FoursquareService {
 
       if (ll) params.ll = ll;
       if (radius) params.radius = radius;
-      // if (fsq_category_ids) params.fsq_category_ids = fsq_category_ids;
+      if (fsq_category_ids) params.fsq_category_ids = fsq_category_ids;
       // if (fsq_chain_ids) params.fsq_chain_ids = fsq_chain_ids;
       // if (exclude_fsq_chain_ids) params.exclude_fsq_chain_ids = exclude_fsq_chain_ids;
       // if (exclude_all_chains !== undefined) params.exclude_all_chains = exclude_all_chains;
@@ -72,8 +72,8 @@ export class FoursquareService {
       // if (ne) params.ne = ne;
       // if (sw) params.sw = sw;
       // if (near) params.near = near;
-      // if (sort) params.sort = sort;
-      // if (limit) params.limit = limit;
+      if (sort) params.sort = sort;
+      if (limit) params.limit = limit;
 
       const response = await axios.get(`${this.baseUrl}/search`, {
         params,
@@ -96,6 +96,155 @@ export class FoursquareService {
         is_error: true,
         error_message: 'Failed to fetch Foursquare information',
       }
+    }
+  }
+
+  /**
+   * Extract unique categories from search results
+   * This method processes the search results and extracts unique categories
+   * with their fsq_category_id, fsq_place_id, and icon information
+   * 
+   * @param searchResults - The results from searchPlaces method
+   * @returns Array of unique categories with required information
+   */
+  public extractUniqueCategories(searchResults: any) {
+    if (!searchResults || !searchResults.results || !Array.isArray(searchResults.results)) {
+      return [];
+    }
+
+    const categoryMap = new Map();
+
+    searchResults.results.forEach((place: any) => {
+      if (place.categories && Array.isArray(place.categories)) {
+        place.categories.forEach((category: any) => {
+          const categoryKey = category.fsq_category_id;
+          
+          if (!categoryMap.has(categoryKey)) {
+            categoryMap.set(categoryKey, {
+              fsq_category_id: category.fsq_category_id,
+              fsq_place_id: place.fsq_place_id,
+              plural_name: category.plural_name,
+              name: category.name,
+              short_name: category.short_name,
+              icon: category.icon
+            });
+          }
+        });
+      }
+    });
+
+    return Array.from(categoryMap.values());
+  }
+
+  /**
+   * Quick Find: Search for places and extract unique categories
+   * This is the main method for the Quick Find functionality
+   * 
+   * @param query - Search query (e.g., "krishna")
+   * @param ll - Latitude/longitude (e.g., "18.5941,73.7345")
+   * @param radius - Search radius in meters
+   * @param fsq_category_ids - Optional category filter
+   * @returns Object with search results and unique categories
+   */
+  public async quickFind(
+    query: string,
+    ll?: string,
+    radius?: number,
+    fsq_category_ids?: string,
+    limit?: number,
+    sort?: string
+  ) {
+    try {
+      // First, search for places
+      const searchResult = await this.searchPlaces(query, ll, radius, fsq_category_ids, sort, limit);
+      
+      if (searchResult.is_error) {
+        return searchResult;
+      }
+
+      // Extract unique categories from the search results
+      const uniqueCategories = this.extractUniqueCategories(searchResult.data);
+
+      return {
+        is_error: false,
+        data: {
+          search_results: searchResult.data,
+          unique_categories: uniqueCategories,
+          total_categories_found: uniqueCategories.length
+        }
+      };
+
+    } catch (error) {
+      return {
+        is_error: true,
+        error_message: 'Failed to perform Quick Find search',
+      }
+    }
+  }
+
+  /**
+   * Get photos for a specific place using fsq_place_id
+   * This method fetches photos from Foursquare's Places API
+   * 
+   * @param fsq_place_id - Foursquare place ID
+   * @returns Array of photos with metadata
+   */
+  public async getPlacePhotos(fsq_place_id: string, limit: number = 5) {
+    try {
+      if (!fsq_place_id) {
+        return {
+          is_error: true,
+          error_message: 'fsq_place_id is required',
+        };
+      }
+
+      const response = await axios.get(`${this.baseUrl}/${fsq_place_id}/photos`, {
+        params: {
+          limit: limit
+        },
+        headers: {
+          'X-Places-Api-Version': this.apiVersion,
+          'accept': 'application/json',
+          'authorization': `Bearer ${this.authToken}`
+        }
+      });
+
+      const responseData = response.data;
+
+      return {
+        is_error: false,
+        data: responseData,
+      };
+
+    } catch (error) {
+      console.error('Foursquare Photos API Error:', error);
+      
+      // Handle specific error cases
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          return {
+            is_error: true,
+            error_message: 'Place not found or no photos available',
+          };
+        }
+        if (error.response?.status === 401) {
+          return {
+            is_error: true,
+            error_message: 'Unauthorized - Invalid API key',
+          };
+        }
+        if (error.response?.status === 429) {
+          return {
+            is_error: true,
+            error_message: 'Rate limit exceeded - Please try again later',
+          };
+        }
+      }
+
+      return {
+        is_error: true,
+        error_message: 'Failed to fetch photos from Foursquare',
+      };
     }
   }
 }
