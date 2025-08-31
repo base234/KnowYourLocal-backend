@@ -58,15 +58,6 @@ export default class LocalsController {
       })
     }
 
-    const local = await Locals.query().where('uuid', data.id).first();
-
-    if (local) {
-      return response.status(400).json({
-        status: 'error',
-        message: 'Local already exists',
-      });
-    }
-
     const new_local = await Locals.create({
       local_type_id: localType.id,
       customer_id: customer_id,
@@ -166,7 +157,6 @@ export default class LocalsController {
     .where('uuid', params.local_id)
     .preload('local_type')
     .first();
-    const messages = await
 
     console.log('🔍 Debug - Local found:', local);
     console.log('🔍 Debug - Local type:', local?.local_type);
