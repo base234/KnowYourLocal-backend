@@ -1,18 +1,16 @@
 # KnowYourLocal Backend
 
-An API Infrastructure in AdonisJS.
+This is the backend or API infrastructure of the project.
 
-This project is just a starter setup for Register, Login and Forgot Password. It includes role management too.
-
-Database used in MySQL.
-
-The backend repo of the project: [https://github.com/base234/KnowYourLocal-backend](https://github.com/base234/KnowYourLocal-backend)
+The frontend repo of the project: [https://github.com/base234/KnowYourLocal-frontend](https://github.com/base234/KnowYourLocal-frontend)
 
 # Getting Started
 ## Requirements
 
 - Node v21+
 - Docker
+- OpenAI Key
+- Foursquare Service Key
 
 ## Project setup
 ### 1. Download the project to your local machine (SSH)
