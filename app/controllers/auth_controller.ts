@@ -299,20 +299,14 @@ export default class AuthController {
   }
 
   async me({ response, auth }: HttpContext) {
-    await auth.check();
-
-    if (!auth.isAuthenticated) {
-      return response.status(401).send({
-        status: 'error',
-        message: 'Unauthorized!',
-      })
+    // Our middleware already validated and attached user
+    const user = (auth as any)?.user
+    if (!user) {
+      return response.status(401).send({ status: 'error', message: 'Unauthorized!' })
     }
-
-    const user_data = auth.user!
-
     return response.status(200).send({
       status: 'success',
-      data: await UserTransformer.transform(user_data),
-    });
+      data: await UserTransformer.transform(user),
+    })
   }
 }
