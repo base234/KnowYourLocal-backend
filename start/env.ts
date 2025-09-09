@@ -83,4 +83,12 @@ export default await Env.create(new URL('../', import.meta.url), {
   |----------------------------------------------------------
   */
   OPENAI_API_KEY: Env.schema.string(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for Descope Authentication
+  |----------------------------------------------------------
+  */
+  DESCOPE_PROJECT_ID: Env.schema.string(),
+  DESCOPE_BASE_URL: Env.schema.string.optional(),
 })

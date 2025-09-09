@@ -36,7 +36,7 @@ router.post('/auth/login', [AuthController, 'login']).as('auth.login');
 router.post('/auth/login/request-code', [AuthController, 'requestLoginCode']).as('auth.requestLoginCode');
 router.post('/auth/login/verify-code', [AuthController, 'verifyLoginCode']).as('auth.verifyLoginCode');
 // router.delete('/auth/logout', [AuthController, 'logout']).as('auth.logout').use(middleware.auth());
-router.get('/auth/me', [AuthController, 'me']).as('auth.me');
+router.get('/auth/me', [AuthController, 'me']).as('auth.me').use(middleware.auth());
 
 // Onboarding Controller
 router.group(() => {
