@@ -2,16 +2,17 @@ import env from '#start/env'
 import { defineConfig } from '@adonisjs/lucid'
 
 const dbConfig = defineConfig({
-  connection: 'mysql',
+  connection: 'pg',
   connections: {
-    mysql: {
-      client: 'mysql2',
+    pg: {
+      client: 'pg',
       connection: {
         host: env.get('DB_HOST'),
         port: env.get('DB_PORT'),
         user: env.get('DB_USER'),
         password: env.get('DB_PASSWORD'),
         database: env.get('DB_DATABASE'),
+        ssl: env.get('PG_SSL') === true,
       },
       migrations: {
         naturalSort: true,
@@ -19,7 +20,7 @@ const dbConfig = defineConfig({
       },
       seeders: {
         paths: ['database/seeders/main'],
-      }
+      },
     },
   },
 })
